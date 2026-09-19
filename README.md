@@ -1,21 +1,29 @@
-# IMDS School Manager v2.0
+# IMDS School Manager v3.0
 
-Version corrigée pour GitHub Pages.
+Application PWA hors connexion pour la gestion scolaire de l'Institution Mixte Le Domaine du Savoir.
 
-## Contenu
-- Tableau de bord
-- Élèves
-- Paiements
-- Notes
-- Présences
-- Finances
-- Sauvegarde/import JSON
-- Stockage local
-- Service Worker / fonctionnement hors connexion
-- Installation PWA
+## Fonctionnalités
+- Dossiers élèves avec NISU, état civil, parents/responsable, CIN, référé par et photo
+- 10 départements d'Haïti et liste des communes avec sélection dépendante Département → Commune
+- Tarification : prix normal, bourse, demi-bourse, prix spécial
+- Balance antérieure, frais annuels demandés, paiements et solde automatique
+- Modes de paiement : espèces, chèque, MonCash, NatCash +509 40409680
+- Numérotation automatique des reçus et impression professionnelle
+- Recette du jour, du mois, total annuel, montant dû, élèves à jour/en retard
+- Historique des paiements, notes et présences
+- IMDS Social « Tout moun konekte » en mode local
+- Export/import JSON et fonctionnement hors connexion
+- Installation comme application PWA
 
 ## Déploiement GitHub Pages
-Le fichier `index.html` doit rester à la racine du repository.
-Dans GitHub: Settings > Pages > Deploy from a branch > `main` > `/ (root)` > Save.
+1. Décompresser ce ZIP.
+2. Mettre les 7 fichiers à la racine du dépôt GitHub.
+3. Commit/push.
+4. Dans Settings → Pages, choisir la branche publiée et le dossier `/ (root)`.
+5. Ouvrir l'URL GitHub Pages puis installer l'application si le navigateur propose « Installer ».
 
-Cette version est un prototype local. Pour une utilisation réelle multi-utilisateur, prévoir une authentification et un backend sécurisé.
+## Données géographiques
+La structure département → commune a été préparée à partir de références publiques sur les divisions territoriales haïtiennes. L'IHSI indique les 10 départements et son manuel de codification comme référence pour les libellés/codes territoriaux.
+
+## Sécurité
+Cette v3 reste un système local/offline. Pour un déploiement multi-utilisateur réel, ajouter authentification, rôles, chiffrement côté serveur, journal d'audit et synchronisation sécurisée.
