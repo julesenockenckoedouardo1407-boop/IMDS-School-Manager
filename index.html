@@ -1,35 +1,138 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#176b4d">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#176b52">
   <meta name="description" content="IMDS School Manager - gestion scolaire hors connexion">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./css/style.css">
   <title>IMDS School Manager</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="topbar">
-    <div><strong>IMDS School Manager</strong><span>Gestion scolaire</span></div>
-    <button id="installBtn" class="secondary hidden">Installer</button>
+    <div>
+      <div class="brand">IMDS School Manager</div>
+      <div class="subtitle">Gestion scolaire • Version 2.0</div>
+    </div>
+    <button id="installBtn" class="btn light hidden">Installer</button>
   </header>
 
-  <nav class="tabs" aria-label="Navigation">
-    <button class="tab active" data-view="dashboard">Tableau de bord</button>
-    <button class="tab" data-view="students">Élèves</button>
-    <button class="tab" data-view="payments">Paiements</button>
-    <button class="tab" data-view="grades">Notes</button>
-    <button class="tab" data-view="attendance">Présences</button>
-    <button class="tab" data-view="finance">Finances</button>
-    <button class="tab" data-view="settings">Sécurité</button>
-  </nav>
+  <main class="app-shell">
+    <nav class="nav" aria-label="Navigation principale">
+      <button class="nav-btn active" data-section="dashboard">Tableau de bord</button>
+      <button class="nav-btn" data-section="students">Élèves</button>
+      <button class="nav-btn" data-section="payments">Paiements</button>
+      <button class="nav-btn" data-section="grades">Notes</button>
+      <button class="nav-btn" data-section="attendance">Présences</button>
+      <button class="nav-btn" data-section="finance">Finances</button>
+      <button class="nav-btn" data-section="security">Sécurité</button>
+    </nav>
 
-  <main id="app"></main>
+    <section id="dashboard" class="section active">
+      <div class="section-head"><div><h1>Tableau de bord</h1><p>Vue générale de l'IMDS.</p></div></div>
+      <div class="cards">
+        <div class="card"><span>Élèves</span><strong id="statStudents">0</strong></div>
+        <div class="card"><span>Recettes</span><strong id="statRevenue">0 HTG</strong></div>
+        <div class="card"><span>Solde à recevoir</span><strong id="statBalance">0 HTG</strong></div>
+        <div class="card"><span>Présences du jour</span><strong id="statAttendance">0</strong></div>
+      </div>
+      <div class="panel">
+        <h2>Actions rapides</h2>
+        <div class="quick-actions">
+          <button class="btn primary" data-go="students">+ Ajouter un élève</button>
+          <button class="btn" data-go="payments">+ Enregistrer un paiement</button>
+          <button class="btn" data-go="attendance">Présences</button>
+          <button class="btn" data-go="security">Sauvegarder</button>
+        </div>
+      </div>
+    </section>
 
-  <footer>IMDS School Manager • Version 1.0 • Données locales sur cet appareil</footer>
-  <script src="js/database.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/service-worker-register.js"></script>
+    <section id="students" class="section">
+      <div class="section-head"><div><h1>Élèves</h1><p>Gestion des dossiers des élèves.</p></div></div>
+      <form id="studentForm" class="panel form-grid">
+        <label>Nom complet<input id="studentName" required placeholder="Ex. Jean Pierre"></label>
+        <label>Classe
+          <select id="studentClass">
+            <option>Kindergarten</option><option>1re AF</option><option>2e AF</option><option>3e AF</option>
+            <option>4e AF</option><option>5e AF</option><option>6e AF</option><option>7e AF</option>
+            <option>8e AF</option><option>9e AF</option>
+          </select>
+        </label>
+        <label>Téléphone parent<input id="studentPhone" placeholder="+509 ..."></label>
+        <label>Montant demandé (HTG)<input id="studentAmount" type="number" min="0" step="1" value="0"></label>
+        <button class="btn primary" type="submit">Ajouter l'élève</button>
+      </form>
+      <div class="panel">
+        <div class="toolbar"><h2>Liste des élèves</h2><input id="studentSearch" placeholder="Rechercher..."></div>
+        <div class="table-wrap"><table><thead><tr><th>Nom</th><th>Classe</th><th>Demandé</th><th>Payé</th><th>Solde</th><th>Action</th></tr></thead><tbody id="studentsBody"></tbody></table></div>
+      </div>
+    </section>
+
+    <section id="payments" class="section">
+      <div class="section-head"><div><h1>Paiements</h1><p>Enregistrement des paiements des élèves.</p></div></div>
+      <form id="paymentForm" class="panel form-grid">
+        <label>Élève<select id="paymentStudent" required></select></label>
+        <label>Montant payé (HTG)<input id="paymentAmount" type="number" min="1" step="1" required></label>
+        <label>Motif<select id="paymentReason"><option>Scolarité</option><option>Inscription</option><option>Examen</option><option>Autre</option></select></label>
+        <button class="btn primary" type="submit">Enregistrer le paiement</button>
+      </form>
+      <div class="panel"><h2>Historique</h2><div class="table-wrap"><table><thead><tr><th>Date</th><th>Élève</th><th>Motif</th><th>Montant</th></tr></thead><tbody id="paymentsBody"></tbody></table></div></div>
+    </section>
+
+    <section id="grades" class="section">
+      <div class="section-head"><div><h1>Notes</h1><p>Enregistrez les résultats scolaires.</p></div></div>
+      <form id="gradeForm" class="panel form-grid">
+        <label>Élève<select id="gradeStudent" required></select></label>
+        <label>Matière<input id="gradeSubject" required placeholder="Mathématiques"></label>
+        <label>Note<input id="gradeValue" type="number" min="0" max="100" step="0.01" required></label>
+        <button class="btn primary" type="submit">Enregistrer la note</button>
+      </form>
+      <div class="panel"><h2>Notes enregistrées</h2><div class="table-wrap"><table><thead><tr><th>Élève</th><th>Matière</th><th>Note</th><th>Date</th></tr></thead><tbody id="gradesBody"></tbody></table></div></div>
+    </section>
+
+    <section id="attendance" class="section">
+      <div class="section-head"><div><h1>Présences</h1><p>Pointage quotidien.</p></div></div>
+      <form id="attendanceForm" class="panel form-grid">
+        <label>Élève<select id="attendanceStudent" required></select></label>
+        <label>Statut<select id="attendanceStatus"><option>Présent</option><option>Absent</option><option>Retard</option></select></label>
+        <button class="btn primary" type="submit">Enregistrer</button>
+      </form>
+      <div class="panel"><h2>Présences récentes</h2><div class="table-wrap"><table><thead><tr><th>Date</th><th>Élève</th><th>Statut</th></tr></thead><tbody id="attendanceBody"></tbody></table></div></div>
+    </section>
+
+    <section id="finance" class="section">
+      <div class="section-head"><div><h1>Finances</h1><p>Résumé des recettes et soldes.</p></div></div>
+      <div class="cards">
+        <div class="card"><span>Total demandé</span><strong id="financeRequested">0 HTG</strong></div>
+        <div class="card"><span>Total payé</span><strong id="financePaid">0 HTG</strong></div>
+        <div class="card"><span>Total à recevoir</span><strong id="financeBalance">0 HTG</strong></div>
+      </div>
+      <div class="panel"><h2>Résumé par élève</h2><div class="table-wrap"><table><thead><tr><th>Élève</th><th>Demandé</th><th>Payé</th><th>Solde</th></tr></thead><tbody id="financeBody"></tbody></table></div></div>
+    </section>
+
+    <section id="security" class="section">
+      <div class="section-head"><div><h1>Sécurité & sauvegarde</h1><p>Les données de cette version sont stockées localement sur cet appareil.</p></div></div>
+      <div class="panel">
+        <h2>Sauvegarde</h2>
+        <p>Exportez vos données avant toute manipulation importante. Le fichier JSON peut être conservé en lieu sûr.</p>
+        <div class="quick-actions">
+          <button id="exportBtn" class="btn primary">Exporter une sauvegarde</button>
+          <label class="btn file-btn">Importer une sauvegarde<input id="importFile" type="file" accept=".json,application/json" hidden></label>
+          <button id="clearBtn" class="btn danger">Effacer les données locales</button>
+        </div>
+        <div id="securityMessage" class="message"></div>
+      </div>
+      <div class="panel">
+        <h2>État</h2>
+        <p id="storageStatus">Stockage local actif.</p>
+        <p class="small">Important : cette version est un prototype hors connexion. Pour un usage réel avec plusieurs utilisateurs, il faudra ajouter une authentification et un serveur sécurisé.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="./js/app.js" defer></script>
 </body>
 </html>
