@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#176b4d">
+  <meta name="description" content="IMDS School Manager - gestion scolaire hors connexion">
+  <title>IMDS School Manager</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div><strong>IMDS School Manager</strong><span>Gestion scolaire</span></div>
+    <button id="installBtn" class="secondary hidden">Installer</button>
+  </header>
+
+  <nav class="tabs" aria-label="Navigation">
+    <button class="tab active" data-view="dashboard">Tableau de bord</button>
+    <button class="tab" data-view="students">Élèves</button>
+    <button class="tab" data-view="payments">Paiements</button>
+    <button class="tab" data-view="grades">Notes</button>
+    <button class="tab" data-view="attendance">Présences</button>
+    <button class="tab" data-view="finance">Finances</button>
+    <button class="tab" data-view="settings">Sécurité</button>
+  </nav>
+
+  <main id="app"></main>
+
+  <footer>IMDS School Manager • Version 1.0 • Données locales sur cet appareil</footer>
+  <script src="js/database.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/service-worker-register.js"></script>
+</body>
+</html>

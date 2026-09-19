@@ -1,0 +1,9 @@
+{
+  "name": "IMDS School Manager",
+  "short_name": "IMDS Manager",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f7f6",
+  "theme_color": "#176b4d",
+  "description": "Gestion scolaire hors connexion pour l'Institution Mixte Le Domaine du Savoir."
+}
