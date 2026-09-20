@@ -23,3 +23,7 @@ Cette version corrige notamment une erreur JavaScript de la v4 qui empêchait le
 
 ## Crédit
 **IMDS School Manager v4.4 — Développée par Jules Enock.**
+
+
+## Crédit développeur
+**IMDS School Manager — Développée par Jules Enock.**

@@ -4,3 +4,5 @@
 
 
 .app-footer{margin:24px auto 0;max-width:1200px;padding:18px 20px;text-align:center;border-top:1px solid rgba(23,107,82,.18);background:#f4f7f6;color:#36564d;font-size:.9rem;line-height:1.8}.app-footer strong{color:#176b52}.about-card{text-align:center;max-width:760px;margin:auto}.developer-credit{font-size:1.25rem;margin:18px 0 4px}.developer-credit strong{color:#176b52}
+
+.developer-top{margin-top:5px;font-size:12px;opacity:.95}.developer-top strong{font-weight:800}
