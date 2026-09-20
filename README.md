@@ -19,3 +19,7 @@ Cette version corrige notamment une erreur JavaScript de la v4 qui empêchait le
 - Bulletin individuel et génération en masse par classe.
 - Impression A4 / PDF via la fonction d’impression du navigateur.
 - Liste automatique de formation des classes.
+
+
+## Crédit
+**IMDS School Manager v4.4 — Développée par Jules Enock.**
