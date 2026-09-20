@@ -134,3 +134,154 @@ adminForm.onsubmit=async e=>{e.preventDefault();const id=adminForm.dataset.edit|
 
 function renderAll(){renderStudents();fillSelects();renderPayments();renderFinance();renderGrades();renderAttendance();renderSocial();renderBulletinPreview();renderClassList();renderReceiptPreview();renderTeachers();renderExpenses();renderMonthlyReport();renderExams();renderPalmares();populatePlanningSubjects();renderPlanning();renderAdmins()}
 gradeYear.oninput=()=>{bulletinYear.value=gradeYear.value};bulletinClassFilter.onchange=renderGrades;bulletinPeriodFilter.onchange=renderGrades;bulletinStudent.onchange=renderBulletinPreview;bulletinYear.onchange=renderBulletinPreview;bulletinPeriod.onchange=renderBulletinPreview;previewBulletin.onclick=renderBulletinPreview;printBulletin.onclick=()=>printOneBulletin(bulletinStudent.value);generateClassBulletins.onclick=printClassBulletins;classListSelect.onchange=renderClassList;classListYear.oninput=renderClassList;printClassList.onclick=printClassList;studentSearch.oninput=renderStudents;resetStudentBtn.onclick=()=>{delete studentForm.dataset.edit;photoPreview.src='';photoPreview.classList.add('hidden')};initDepartments();renderAll();renderClassList();renderBulletinPreview();if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(console.error));
+
+/* ===== IMDS v4.5 — Synchronisation multi-appareils ===== */
+const IMDS_SYNC_KEY='imds_sync_config_v45';
+const IMDS_DEVICE_KEY='imds_sync_device_v45';
+let imdsSupabase=null;
+let imdsSyncTimer=null;
+let imdsSyncBusy=false;
+
+function syncCfg(){try{return JSON.parse(localStorage.getItem(IMDS_SYNC_KEY)||'{}')}catch{return {}}}
+function saveSyncCfg(c){localStorage.setItem(IMDS_SYNC_KEY,JSON.stringify(c))}
+function syncDeviceId(){let id=localStorage.getItem(IMDS_DEVICE_KEY);if(!id){id='IMDS-'+uid();localStorage.setItem(IMDS_DEVICE_KEY,id)}return id}
+function syncSetMessage(msg,type=''){const el=document.getElementById('syncMessage');if(el){el.textContent=msg;el.className='message '+type}}
+function syncSetStatus(msg,type=''){const el=document.getElementById('syncStatus');if(el){el.textContent=msg;el.className='message '+type}}
+function syncIsConfigured(){const c=syncCfg();return !!(c.url&&c.key&&c.schoolId)}
+function syncClient(){return imdsSupabase}
+
+async function initSupabaseClient(){
+  const c=syncCfg();
+  if(!c.url||!c.key||!window.supabase){imdsSupabase=null;return null}
+  try{
+    imdsSupabase=window.supabase.createClient(c.url,c.key,{auth:{autoRefreshToken:true,persistSession:true,detectSessionInUrl:true}});
+    const {data}=await imdsSupabase.auth.getSession();
+    if(data?.session) syncSetStatus('Connecté au cloud','ok');
+    else syncSetStatus('Configuration enregistrée — connexion requise','warn');
+    return imdsSupabase;
+  }catch(e){imdsSupabase=null;syncSetStatus('Configuration cloud invalide : '+e.message,'error');return null}
+}
+
+function fillSyncForm(){
+  const c=syncCfg();
+  if(document.getElementById('syncUrl')) syncUrl.value=c.url||'';
+  if(document.getElementById('syncKey')) syncKey.value=c.key||'';
+  if(document.getElementById('syncSchoolId')) syncSchoolId.value=c.schoolId||'IMDS';
+  if(document.getElementById('syncDevice')) syncDevice.textContent=syncDeviceId();
+}
+
+async function syncSession(){return imdsSupabase? (await imdsSupabase.auth.getSession()).data.session:null}
+function cloudPayload(){return {schemaVersion:1,appVersion:'4.5',data:JSON.parse(JSON.stringify(data))}}
+
+async function cloudRow(){
+  if(!imdsSupabase) return {row:null,error:new Error('Supabase non configuré')};
+  const c=syncCfg();
+  const {data:rows,error}=await imdsSupabase.from('imds_sync_snapshots').select('*').eq('school_id',c.schoolId).limit(1);
+  return {row:rows?.[0]||null,error};
+}
+
+function localStamp(){return Number(localStorage.getItem('imds_sync_local_stamp_v45')||0)}
+function setLocalStamp(v){localStorage.setItem('imds_sync_local_stamp_v45',String(v||Date.now()))}
+
+async function syncPush(force=false){
+  if(imdsSyncBusy)return false;
+  const session=await syncSession();
+  if(!session){syncSetMessage('Connectez-vous d’abord au compte cloud.','warn');return false}
+  if(!navigator.onLine){syncSetMessage('Hors connexion : les données restent enregistrées localement.','warn');return false}
+  imdsSyncBusy=true;
+  try{
+    const c=syncCfg();
+    const remote=await cloudRow();
+    if(remote.error)throw remote.error;
+    const stamp=localStamp()||0;
+    if(remote.row && !force && Number(new Date(remote.row.updated_at).getTime())>stamp && stamp>0){
+      syncSetMessage('Une version cloud plus récente existe. Récupérez-la avant d’envoyer vos modifications, ou utilisez « Envoyer vers le cloud » après vérification.','warn');return false;
+    }
+    const payload=cloudPayload();
+    const now=Date.now();
+    const row={school_id:c.schoolId,payload,updated_at:new Date(now).toISOString(),updated_by:session.user.id,device_id:syncDeviceId(),revision:Number(remote.row?.revision||0)+1};
+    const {error}=await imdsSupabase.from('imds_sync_snapshots').upsert(row,{onConflict:'school_id'});
+    if(error)throw error;
+    setLocalStamp(now);
+    document.getElementById('syncLast').textContent=new Date(now).toLocaleString('fr-FR');
+    document.getElementById('syncState').textContent='Synchronisé';
+    syncSetMessage('Données envoyées vers le cloud avec succès.','ok');
+    return true;
+  }catch(e){syncSetMessage('Échec de l’envoi : '+e.message,'error');return false}
+  finally{imdsSyncBusy=false}
+}
+
+async function syncPull(force=false){
+  if(imdsSyncBusy)return false;
+  const session=await syncSession();
+  if(!session){syncSetMessage('Connectez-vous d’abord au compte cloud.','warn');return false}
+  if(!navigator.onLine){syncSetMessage('Hors connexion : impossible de récupérer le cloud.','warn');return false}
+  imdsSyncBusy=true;
+  try{
+    const remote=await cloudRow();
+    if(remote.error)throw remote.error;
+    if(!remote.row){syncSetMessage('Aucune sauvegarde cloud pour cette école.','warn');return false}
+    const remoteStamp=new Date(remote.row.updated_at).getTime();
+    if(!force && localStamp()>remoteStamp){syncSetMessage('Votre appareil contient une version locale plus récente. Envoyez-la après vérification si nécessaire.','warn');return false}
+    if(!remote.row.payload?.data?.students)throw new Error('Sauvegarde cloud invalide');
+    data=remote.row.payload.data;
+    localStorage.setItem(KEY,JSON.stringify(data));
+    setLocalStamp(remoteStamp);
+    renderAll();
+    document.getElementById('syncLast').textContent=new Date(remoteStamp).toLocaleString('fr-FR');
+    document.getElementById('syncState').textContent='Synchronisé';
+    syncSetMessage('Données récupérées depuis le cloud.','ok');
+    return true;
+  }catch(e){syncSetMessage('Échec de récupération : '+e.message,'error');return false}
+  finally{imdsSyncBusy=false}
+}
+
+async function syncNow(){
+  if(!syncIsConfigured())return syncSetMessage('Configurez d’abord l’URL Supabase, la clé publishable et l’identifiant de l’école.','warn');
+  if(!imdsSupabase)await initSupabaseClient();
+  const session=await syncSession();
+  if(!session)return syncSetMessage('Connectez-vous au compte cloud avant de synchroniser.','warn');
+  const remote=await cloudRow();
+  if(remote.error)return syncSetMessage('Impossible de lire le cloud : '+remote.error.message,'error');
+  if(!remote.row)return syncPush(true);
+  const r=new Date(remote.row.updated_at).getTime(), l=localStamp();
+  if(r>l&&l>0){syncSetMessage('Le cloud est plus récent. Utilisez « Récupérer depuis le cloud » pour éviter d’écraser les données.','warn');return false}
+  return syncPush(false);
+}
+
+async function syncLogin(){
+  if(!imdsSupabase)await initSupabaseClient();
+  if(!imdsSupabase)return syncSetStatus('Configurez d’abord Supabase.','warn');
+  const email=syncEmail.value.trim(), password=syncPassword.value;
+  if(!email||!password)return syncSetStatus('Email et mot de passe requis.','warn');
+  try{
+    const {error}=await imdsSupabase.auth.signInWithPassword({email,password});
+    if(error)throw error;
+    syncSetStatus('Connexion réussie.','ok');
+    syncSetMessage('Compte cloud connecté. Vous pouvez synchroniser cet appareil.','ok');
+    const s=await syncSession();if(s)syncUser.textContent=s.user.email||s.user.id;
+    await syncPull(false);
+  }catch(e){syncSetStatus('Échec de connexion : '+e.message,'error')}
+}
+async function syncLogout(){if(!imdsSupabase)return;await imdsSupabase.auth.signOut();syncSetStatus('Déconnecté — mode local disponible.','warn');syncUser.textContent='—';document.getElementById('syncState').textContent='Local uniquement'}
+
+function scheduleCloudSync(){
+  if(!syncIsConfigured()||!imdsSupabase||!navigator.onLine)return;
+  clearTimeout(imdsSyncTimer);
+  imdsSyncTimer=setTimeout(()=>syncNow().catch(()=>{}),1800);
+}
+
+const _imdsOriginalSave=save;
+save=function(){_imdsOriginalSave();scheduleCloudSync()}
+
+function initSyncModule(){
+  fillSyncForm();
+  syncConfigForm.onsubmit=async e=>{e.preventDefault();saveSyncCfg({url:syncUrl.value.trim().replace(/\/$/,''),key:syncKey.value.trim(),schoolId:syncSchoolId.value.trim()||'IMDS'});await initSupabaseClient();syncSetMessage('Configuration enregistrée sur cet appareil.','ok')};
+  syncLoginBtn.onclick=syncLogin;syncLogoutBtn.onclick=syncLogout;syncNowBtn.onclick=syncNow;syncPullBtn.onclick=()=>syncPull(true);syncPushBtn.onclick=()=>syncPush(true);
+  window.addEventListener('online',()=>{syncSetStatus(syncIsConfigured()?'Connexion Internet détectée.':'Mode local','ok');if(syncIsConfigured())initSupabaseClient()});
+  window.addEventListener('offline',()=>syncSetStatus('Hors connexion — les données restent disponibles localement.','warn'));
+  if(syncIsConfigured())initSupabaseClient();
+  if(imdsSupabase)imdsSupabase.auth.onAuthStateChange((_event,session)=>{syncUser.textContent=session?.user?.email||'—';syncState.textContent=session?'Connecté':'Local uniquement'});
+}
+
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initSyncModule);else initSyncModule();
